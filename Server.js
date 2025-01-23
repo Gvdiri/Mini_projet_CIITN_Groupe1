@@ -1,189 +1,262 @@
-// Importation des modules requis
+// Importation des modules nécessaires
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
+const path = require('path');
 
 // Initialisation de l'application Express
 const app = express();
-const port = 3000;
 
-// Configuration de body-parser pour traiter les requêtes JSON et URL-encodées
+// Configuration du middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Configuration de la connexion à la base de données MySQL
+// Dossier public pour le côté client
+app.use(express.static(path.join(__dirname, 'Public')));
+
+// Configuration de la connexion à la base de données
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'nom_de_la_base', // Remplace par le nom de ta base de données
+  user: 'root', // Remplacez par votre utilisateur MySQL
+  password: '', // Remplacez par votre mot de passe MySQL
+  database: 'bd_node_project', // Remplacez par le nom de votre base de données
 });
 
 // Connexion à la base de données
-db.connect((err) => {
+db.connect(err => {
   if (err) {
-    console.error('Erreur de connexion :', err);
-    return;
+    console.error('Erreur de connexion à la base de données:', err);
+    process.exit(1);
   }
   console.log('Connecté à la base de données MySQL.');
 });
 
-// Route de test
+// Routes API pour gérer les données
+
+// Ajouter une route pour la page d'accueil (si vous en avez besoin)
 app.get('/', (req, res) => {
-  res.send('Bienvenue sur le serveur Node.js !');
+  res.send('Bienvenue sur l\'application de gestion des patients.');
 });
 
-// -------------------------- Routes pour gérer les Patients --------------------------
+// Routes pour gérer les patients
+app.post('/Patient', (req, res) => {
+  const { nom, prenom, dateDeNaissance, tel, sexe, nationalite } = req.body;
+  const query = `
+    INSERT INTO Patient (Nom, Prenom, Date_De_Naissance, Tel, Sexe, Nationalite)
+    VALUES (?, ?, ?, ?, ?, ?)`;
+  db.query(query, [nom, prenom, dateDeNaissance, tel, sexe, nationalite], (err, result) => {
+    if (err) {
+      console.error('Erreur lors de l\'ajout du patient:', err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(201).send({ message: 'Patient ajouté avec succès.', id: result.insertId });
+    }
+  });
+});
 
-// Récupérer tous les patients
-app.get('/patients', (req, res) => {
+app.get('/Patient', (req, res) => {
   const query = 'SELECT * FROM Patient';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur lors de la récupération des patients :', err);
+      console.error('Erreur lors de la récupération des patients:', err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.json(results);
+      res.status(200).send(results);
     }
   });
 });
 
-// Ajouter un nouveau patient
-app.post('/patients', (req, res) => {
-  const { Nom, Prenom, DateNaissance, Telephone, Sexe, Nationalite } = req.body;
-  const query = 'INSERT INTO Patient (Nom, Prenom, DateNaissance, Telephone, Sexe, Nationalite) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(query, [Nom, Prenom, DateNaissance, Telephone, Sexe, Nationalite], (err, results) => {
-    if (err) {
-      console.error('Erreur lors de l\'insertion du patient :', err);
-      res.status(500).send('Erreur serveur.');
-    } else {
-      res.status(201).send('Patient ajouté avec succès.');
-    }
-  });
-});
-
-// Modifier un patient
-app.put('/patients/:id', (req, res) => {
+app.put('/Patient/:id', (req, res) => {
   const { id } = req.params;
-  const { Nom, Prenom, DateNaissance, Telephone, Sexe, Nationalite } = req.body;
-  const query = 'UPDATE Patient SET Nom = ?, Prenom = ?, DateNaissance = ?, Telephone = ?, Sexe = ?, Nationalite = ? WHERE IdPatient = ?';
-  db.query(query, [Nom, Prenom, DateNaissance, Telephone, Sexe, Nationalite, id], (err, results) => {
+  const { nom, prenom, dateDeNaissance, tel, sexe, nationalite } = req.body;
+  const query = `
+    UPDATE Patient
+    SET Nom = ?, Prenom = ?, Date_De_Naissance = ?, Tel = ?, Sexe = ?, Nationalite = ?
+    WHERE Id_Patient = ?`;
+  db.query(query, [nom, prenom, dateDeNaissance, tel, sexe, nationalite, id], (err) => {
     if (err) {
-      console.error('Erreur lors de la mise à jour du patient :', err);
+      console.error('Erreur lors de la modification du patient:', err);
       res.status(500).send('Erreur serveur.');
-    } else if (results.affectedRows === 0) {
-      res.status(404).send('Patient non trouvé.');
     } else {
-      res.send('Patient mis à jour avec succès.');
+      res.status(200).send({ message: 'Patient modifié avec succès.' });
     }
   });
 });
 
-// Supprimer un patient
-app.delete('/patients/:id', (req, res) => {
+app.delete('/Patient/:id', (req, res) => {
   const { id } = req.params;
-  const query = 'DELETE FROM Patient WHERE IdPatient = ?';
-  db.query(query, [id], (err, results) => {
+  const query = 'DELETE FROM Patient WHERE Id_Patient = ?';
+  db.query(query, [id], (err) => {
     if (err) {
-      console.error('Erreur lors de la suppression du patient :', err);
+      console.error('Erreur lors de la suppression du patient:', err);
       res.status(500).send('Erreur serveur.');
-    } else if (results.affectedRows === 0) {
-      res.status(404).send('Patient non trouvé.');
     } else {
-      res.send('Patient supprimé avec succès.');
+      res.status(200).send({ message: 'Patient supprimé avec succès.' });
     }
   });
 });
 
-// -------------------------- Routes pour gérer les Dossiers --------------------------
+// Routes pour gérer les dossiers
+app.post('/Dossier', (req, res) => {
+  const { dateDeCreation, idPatient } = req.body;
+  const query = `
+    INSERT INTO Dossier (Date_De_Creation, Id_Patient)
+    VALUES (?, ?)`;
+  db.query(query, [dateDeCreation, idPatient], (err, result) => {
+    if (err) {
+      console.error("Erreur lors de l'ajout du dossier:", err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(201).send({ message: 'Dossier ajouté avec succès.', id: result.insertId });
+    }
+  });
+});
 
-// Récupérer tous les dossiers
-app.get('/dossiers', (req, res) => {
+app.get('/Dossier', (req, res) => {
   const query = 'SELECT * FROM Dossier';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur lors de la récupération des dossiers :', err);
+      console.error("Erreur lors de la récupération des dossiers:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.json(results);
+      res.status(200).send(results);
     }
   });
 });
 
-// Ajouter un dossier
-app.post('/dossiers', (req, res) => {
-  const { DateCreation, IdPatient } = req.body;
-  const query = 'INSERT INTO Dossier (DateCreation, IdPatient) VALUES (?, ?)';
-  db.query(query, [DateCreation, IdPatient], (err, results) => {
+app.put('/Dossier/:id', (req, res) => {
+  const { id } = req.params;
+  const { dateDeCreation, idPatient } = req.body;
+  const query = `
+    UPDATE Dossier
+    SET Date_De_Creation = ?, Id_Patient = ?
+    WHERE Id_Dossier = ?`;
+  db.query(query, [dateDeCreation, idPatient, id], (err) => {
     if (err) {
-      console.error('Erreur lors de l\'insertion du dossier :', err);
+      console.error("Erreur lors de la modification du dossier:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.status(201).send('Dossier ajouté avec succès.');
+      res.status(200).send({ message: 'Dossier modifié avec succès.' });
     }
   });
 });
 
-// -------------------------- Routes pour gérer les Examens --------------------------
+app.delete('/Dossier/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Dossier WHERE Id_Dossier = ?';
+  db.query(query, [id], (err) => {
+    if (err) {
+      console.error("Erreur lors de la suppression du dossier:", err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(200).send({ message: 'Dossier supprimé avec succès.' });
+    }
+  });
+});
 
-// Récupérer tous les examens
-app.get('/examens', (req, res) => {
+// Routes pour gérer les examens
+app.post('/Examen', (req, res) => {
+  const { nom, dateDeResultat, resultat, idDossier } = req.body;
+  const query = `
+    INSERT INTO Examen (Nom, Date_De_Resultat, Resultat, Id_Dossier)
+    VALUES (?, ?, ?, ?)`;
+  db.query(query, [nom, dateDeResultat, resultat, idDossier], (err, result) => {
+    if (err) {
+      console.error("Erreur lors de l'ajout de l'examen:", err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(201).send({ message: 'Examen ajouté avec succès.', id: result.insertId });
+    }
+  });
+});
+
+app.get('/Examen', (req, res) => {
   const query = 'SELECT * FROM Examen';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur lors de la récupération des examens :', err);
+      console.error("Erreur lors de la récupération des examens:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.json(results);
+      res.status(200).send(results);
     }
   });
 });
 
-// Ajouter un examen
-app.post('/examens', (req, res) => {
-  const { Nom, DateResultat, Resultats, IdDossier } = req.body;
-  const query = 'INSERT INTO Examen (Nom, DateResultat, Resultats, IdDossier) VALUES (?, ?, ?, ?)';
-  db.query(query, [Nom, DateResultat, Resultats, IdDossier], (err, results) => {
+app.put('/Examen/:id', (req, res) => {
+  const { id } = req.params;
+  const { nom, dateDeResultat, resultat, idDossier } = req.body;
+  const query = `
+    UPDATE Examen
+    SET Nom = ?, Date_De_Resultat = ?, Resultat = ?, Id_Dossier = ?
+    WHERE Id_Examen = ?`;
+  db.query(query, [nom, dateDeResultat, resultat, idDossier, id], (err) => {
     if (err) {
-      console.error('Erreur lors de l\'insertion de l\'examen :', err);
+      console.error("Erreur lors de la modification de l'examen:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.status(201).send('Examen ajouté avec succès.');
+      res.status(200).send({ message: 'Examen modifié avec succès.' });
     }
   });
 });
 
-// -------------------------- Routes pour gérer les Rendezvous --------------------------
+app.delete('/Examen/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Examen WHERE Id_Examen = ?';
+  db.query(query, [id], (err) => {
+    if (err) {
+      console.error("Erreur lors de la suppression de l'examen:", err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(200).send({ message: 'Examen supprimé avec succès.' });
+    }
+  });
+});
 
-// Récupérer tous les rendez-vous
-app.get('/rendezvous', (req, res) => {
-  const query = 'SELECT * FROM Rendezvous';
+// Routes pour gérer les utilisateurs
+app.post('/User', (req, res) => {
+  const { nom, prenom, login, motDePasse } = req.body;
+  const query = `
+    INSERT INTO Utilisateur (Nom, Prenom, Login, Mot_De_Passe)
+    VALUES (?, ?, ?, ?)`;
+  db.query(query, [nom, prenom, login, motDePasse], (err, result) => {
+    if (err) {
+      console.error("Erreur lors de l'ajout de l'utilisateur:", err);
+      res.status(500).send('Erreur serveur.');
+    } else {
+      res.status(201).send({ message: 'Utilisateur ajouté avec succès.', id: result.insertId });
+    }
+  });
+});
+
+
+app.get('/User', (req, res) => {
+  const query = 'SELECT * FROM Utilisateur';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Erreur lors de la récupération des rendez-vous :', err);
+      console.error("Erreur lors de la récupération des utilisateurs:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.json(results);
+      res.status(200).send(results);
     }
   });
 });
 
-// Ajouter un rendez-vous
-app.post('/rendezvous', (req, res) => {
-  const { DateRendezvous, IdPatient, IdUtilisateur } = req.body;
-  const query = 'INSERT INTO Rendezvous (DateRendezvous, IdPatient, IdUtilisateur) VALUES (?, ?, ?)';
-  db.query(query, [DateRendezvous, IdPatient, IdUtilisateur], (err, results) => {
+app.delete('/User/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM Utilisateur WHERE Id_Utilisateur = ?';
+  db.query(query, [id], (err) => {
     if (err) {
-      console.error('Erreur lors de l\'insertion du rendez-vous :', err);
+      console.error("Erreur lors de la suppression de l'utilisateur:", err);
       res.status(500).send('Erreur serveur.');
     } else {
-      res.status(201).send('Rendez-vous ajouté avec succès.');
+      res.status(200).send({ message: 'Utilisateur supprimé avec succès.' });
     }
   });
 });
 
-// -------------------------- Démarrage du serveur --------------------------
 
-app.listen(port, () => {
-  console.log(`Serveur en cours d'exécution sur le port ${port}`);
+// Lancer le serveur
+const PORT = 3000; // Remplacez par le port que vous souhaitez utiliser
+app.listen(PORT, () => {
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
 });

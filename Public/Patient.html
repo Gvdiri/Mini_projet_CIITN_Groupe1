@@ -1,34 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Patients</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    .form-container {
+      margin-bottom: 30px;
+    }
+    .message {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <h1>Gestion des patients</h1>
-    <form action="" method="post">
-        <label for="IdPatient">IdPatient</label>
-        <input type="text" name="IdPatient" id="IdPatient"><br><br>
-        <label for="Nom">Nom:</label>
-        <input type="text" name="Nom" id="Nom"><br><br>
-        <label for="Prenom">Prenom:</label>
-        <input type="text" name="Prenom" id="Prenom"><br><br>
-        <label for="DateNaissance">DateNaissance:</label>
-        <input type="date" name="DateNaissance" id="DateNaissance"><br><br>
-        <label for="Telephone">Telephone:</label>
-        <input type="tel" name="Telephone" id="Telephone"><br><br>
-        <label for="Sexe">Sexe:</label>
-        <select name="Sexe" id="Sexe">
-            <option value="">----------</option>
-            <option value="">Homme</option>
-            <option value="">Femme</option>
-        </select><br><br>
-        <label for="Nationalite">Nationalite:</label>
-        <input type="text" name="Nationalite" id="Nationalite"><br><br>
-        <input type="submit" value="Ajouter" id="add">
-        <input type="submit" value="Modifier" id="update">
-        <input type="submit" value="Supprimer" id="delete">
+  <h1>Gestion des Patients</h1>
+
+  <!-- Formulaire d'ajout de patient -->
+  <div class="form-container">
+    <form id="patientForm">
+      <label for="nom">Nom :</label>
+      <input type="text" id="nom" name="nom" required><br><br>
+
+      <label for="prenom">Prénom :</label>
+      <input type="text" id="prenom" name="prenom" required><br><br>
+
+      <label for="dateDeNaissance">Date de Naissance :</label>
+      <input type="date" id="dateDeNaissance" name="dateDeNaissance" required><br><br>
+
+      <label for="tel">Téléphone :</label>
+      <input type="text" id="tel" name="tel"><br><br>
+
+      <label for="sexe">Sexe :</label>
+      <select id="sexe" name="sexe" required>
+        <option value="M">Masculin</option>
+        <option value="F">Féminin</option>
+      </select><br><br>
+
+      <label for="nationalite">Nationalité :</label>
+      <input type="text" id="nationalite" name="nationalite" required><br><br>
+
+      <button type="submit">Ajouter le Patient</button>
     </form>
+
+    <!-- Message pour les erreurs ou confirmations -->
+    <div id="message" class="message"></div>
+  </div>
+
+  <!-- Liste des patients -->
+  <h2>Liste des Patients</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Date de Naissance</th>
+        <th>Téléphone</th>
+        <th>Sexe</th>
+        <th>Nationalité</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="patientsTableBody">
+      <!-- Les données des patients seront insérées ici par le script -->
+    </tbody>
+  </table>
+
+  <script src="script.js"></script>
 </body>
 </html>
